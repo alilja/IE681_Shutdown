@@ -18,8 +18,13 @@ def message_generator(name, env, out_pipe):
         # the event.triggered will be True in the other order it will be
         # False
 
-        # Messsage format: (time, command, kind)
-        msg = (env.now, "HOME", "student_worker")
+        msg = {
+            "time": env.now,
+            "command": "HOME",
+            "kind": "student_worker",
+            "quality": "good",
+        }
+        print "Message sent at {0}".format(env.now)
         out_pipe.put(msg)
 
 env = simpy.Environment()

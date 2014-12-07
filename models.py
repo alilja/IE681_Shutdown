@@ -99,11 +99,11 @@ class Employee(object):
 
             # and once they get there, they check their messages once an hour
             print "{0}: Arrived at work at {1}.".format(self.id, self.env.now % 24)
+            arrived = self.env.now
             for i in range(8):
-                yield self.env.process(self.work(1))
                 print "{0}: Checking messages.".format(self.id)
                 # checking the messages, which flips the send_home flag
-                self.env.process(self.check_for_messages(self.pipe))
+                yield self.env.process(self.check_for_messages(self.pipe, arrived))
                 if self.send_home:
                     print "{0}: Received go home message.".format(self.id)
                     # if you get the message to go home, do it
@@ -111,6 +111,7 @@ class Employee(object):
                     # removed from the simulation
                     self.simulate = False
                     return
+                yield self.env.process(self.work(1))
 
             # at the end of the day, go home
             yield self.env.process(self.go_home())
@@ -133,15 +134,15 @@ class Employee(object):
     def work(self, duration):
         yield self.env.timeout(duration)
 
-    def check_for_messages(self, in_pipe):
+    def check_for_messages(self, in_pipe, arrival_time):
         msg = yield in_pipe.get()
 
-        if "HOME" in msg[1]:
+        if "HOME" in msg['command']:
             # make sure the message is for you specifically
-            if Employee.kind[msg[2]] is self.kind or Employee.kind[msg[2]] == "ALL":
+            if Employee.kind[msg['kind']] == self.kind or Employee.kind[msg['kind']] == "ALL":
                 self.send_home = True
                 # if you get to work and then find out you have to go
                 # home, you're going to be unhappy
-                if msg[0] < self.env.now:
-                    print "Late message received."
+                if msg['time'] < arrival_time + 3:
+                    print ">>>> {0}: Late message received.".format(self.id)
                     self.gruntled = "dis"
