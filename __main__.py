@@ -17,7 +17,7 @@ def message_generator(name, env, out_pipe):
         # in the pipe first and then message_consumer gets from pipe,
         # the event.triggered will be True in the other order it will be
         # False
-        msg = (env.now, '%s says hello at %d' % (name, env.now + 8))
+        msg = (env.now, '%s says hello at %d' % (name, env.now))
         out_pipe.put(msg)
 
 env = simpy.Environment()
@@ -57,4 +57,4 @@ employees = [
 
 env.process(message_generator('Generator A', env, bc_pipe))
 
-env.run(until=24)
+env.run(until=48)
