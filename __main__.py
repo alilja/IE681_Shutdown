@@ -8,7 +8,7 @@ def message_generator(name, env, out_pipe):
     """A process which randomly generates messages."""
     while True:
         # wait for next transmission
-        yield env.timeout(5)
+        yield env.timeout(14)
 
         # messages are time stamped to later check if the consumer was
         # late getting them.  Note, using event.triggered to do this may
@@ -21,7 +21,7 @@ def message_generator(name, env, out_pipe):
         msg = {
             "time": env.now,
             "command": "HOME",
-            "kind": "student_worker",
+            "kind": "ALL",
             "quality": "good",
         }
         print "Message sent at {0}".format(env.now)
