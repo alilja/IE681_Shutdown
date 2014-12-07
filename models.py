@@ -86,6 +86,7 @@ class UnitHead(Logger):
             if minimum < 0:
                 minimum = 0
             quotient = (self.weather.distance / self.weather.speed) * uniform(minimum, self.workload)
+            self.log(quotient)
             if quotient < (self.weather.distance / self.weather.speed) / 20:
                 self.log(self.weather.distance)
 
