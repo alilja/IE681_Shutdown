@@ -8,7 +8,7 @@ def message_generator(name, env, out_pipe):
     """A process which randomly generates messages."""
     while True:
         # wait for next transmission
-        yield env.timeout(100)
+        yield env.timeout(5)
 
         # messages are time stamped to later check if the consumer was
         # late getting them.  Note, using event.triggered to do this may
@@ -17,13 +17,15 @@ def message_generator(name, env, out_pipe):
         # in the pipe first and then message_consumer gets from pipe,
         # the event.triggered will be True in the other order it will be
         # False
-        msg = (env.now, '%s says HOME at %d' % (name, env.now))
+
+        # Messsage format: (time, command, kind)
+        msg = (env.now, "HOME", "student_worker")
         out_pipe.put(msg)
 
 env = simpy.Environment()
 weather = Weather(
     env=env,
-    time=2,
+    time=10,
     distance=20,
     intensity=6,
 )
@@ -51,6 +53,14 @@ employees = [
         distance=0.5,
         speed=60,
         kind=Employee.kind.student_worker,
+        pipe=bc_pipe.get_output_conn(),
+    ),
+    Employee(
+        env=env,
+        weather=weather,
+        distance=30,
+        speed=60,
+        kind=Employee.kind.staff,
         pipe=bc_pipe.get_output_conn(),
     ),
 ]

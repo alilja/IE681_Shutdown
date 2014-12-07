@@ -30,11 +30,13 @@ class Weather(object):
 
 class Employee(object):
     class location(Enum):
+        """Where the employee currently is."""
         home = 0
         work = 1
         traveling = 2
 
     class kind(Enum):
+        """What kind of employee they are."""
         staff = 0
         faculty = 1
         student = 2
@@ -56,44 +58,64 @@ class Employee(object):
         self.location = Employee.location.home
 
         self.send_home = False
+        self.gruntled = None
+
+        self.simulate = True
 
         # runs every time a new employee is created
         self.action = env.process(self.run())
 
     def run(self):
-        while True:
+        while self.simulate:
+            # sleep until 8 AM
             yield self.env.timeout(8)
 
+            # wake up and spend an hour getting ready
             print "{0}: Waking up at {1}.".format(self.id, self.env.now % 24)
-            yield self.env.process(self.work(1))
+            yield self.env.timeout(1)
 
+            # check the weather before we head out...
             print "{0}: Checking weather.".format(self.id)
-            # the weather will get to work faster than they will
+            # if the weather will get to work faster than they will
+            # then they opt to stay home. more intense weather makes
+            # it more likely they'll stay home
             if (self.weather.distance / self.weather.speed) / self.weather.intensity < self.distance / self.speed:
                 print "{0}: Staying home.".format(self.id)
+                self.simulate = False
                 break
 
+            # if they're a student worker, cyride is shut down, and they can't walk to work
+            # then they can't come in at all
             if self.kind is Employee.kind.student_worker:
                 if not CYRIDE and self.distance > 1.0:
                     print "{0}: Cannot get to work because Cyride is closed.".format(self.id)
+                    self.simulate = False
                     break
 
+            # if none of that is true, they travel to work
             print "{0}: Going to work at {1}.".format(self.id, self.env.now % 24)
             yield self.env.process(self._travel(self.distance))
-
             self.location = Employee.location.work
+
+            # and once they get there, they check their messages once an hour
             print "{0}: Arrived at work at {1}.".format(self.id, self.env.now % 24)
             for i in range(8):
                 yield self.env.process(self.work(1))
                 print "{0}: Checking messages.".format(self.id)
+                # checking the messages, which flips the send_home flag
                 self.env.process(self.check_for_messages(self.pipe))
                 if self.send_home:
                     print "{0}: Received go home message.".format(self.id)
+                    # if you get the message to go home, do it
                     yield self.env.process(self.go_home())
+                    # removed from the simulation
+                    self.simulate = False
                     return
 
+            # at the end of the day, go home
             yield self.env.process(self.go_home())
 
+            # stay at home for the remainder of the day (until midnight, technically)
             yield self.env.timeout(24 - self.env.now % 24)
             print "{0}: Slept until {1}.".format(self.id, self.env.now % 24)
 
@@ -113,8 +135,13 @@ class Employee(object):
 
     def check_for_messages(self, in_pipe):
         msg = yield in_pipe.get()
-        if msg[0] < self.env.now:
-            print "Late message received."
 
         if "HOME" in msg[1]:
-            self.send_home = True
+            # make sure the message is for you specifically
+            if Employee.kind[msg[2]] is self.kind or Employee.kind[msg[2]] == "ALL":
+                self.send_home = True
+                # if you get to work and then find out you have to go
+                # home, you're going to be unhappy
+                if msg[0] < self.env.now:
+                    print "Late message received."
+                    self.gruntled = "dis"
