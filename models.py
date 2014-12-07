@@ -55,23 +55,20 @@ class Employee(object):
 
         self.location = Employee.location.home
 
-        self.go_home = False
+        self.send_home = False
 
         # runs every time a new employee is created
         self.action = env.process(self.run())
 
     def run(self):
         while True:
-            yield self.env.timeout(6)
+            yield self.env.timeout(8)
 
             print "{0}: Waking up at {1}.".format(self.id, self.env.now % 24)
-            self.env.process(self.check_for_messages(self.pipe))
-            yield self.env.timeout(1)
+            yield self.env.process(self.work(1))
 
             print "{0}: Checking weather.".format(self.id)
             # the weather will get to work faster than they will
-            print self.weather.distance / self.weather.speed
-            print self.distance / self.speed
             if (self.weather.distance / self.weather.speed) / self.weather.intensity < self.distance / self.speed:
                 print "{0}: Staying home.".format(self.id)
                 break
@@ -82,24 +79,32 @@ class Employee(object):
                     break
 
             print "{0}: Going to work at {1}.".format(self.id, self.env.now % 24)
-            yield self.env.process(self.travel(self.distance))
+            yield self.env.process(self._travel(self.distance))
 
             self.location = Employee.location.work
             print "{0}: Arrived at work at {1}.".format(self.id, self.env.now % 24)
             for i in range(8):
+                yield self.env.process(self.work(1))
                 print "{0}: Checking messages.".format(self.id)
                 self.env.process(self.check_for_messages(self.pipe))
-                yield self.env.process(self.work(1))
+                if self.send_home:
+                    print "{0}: Received go home message.".format(self.id)
+                    yield self.env.process(self.go_home())
+                    return
 
-            print "{0}: Leaving work at {1}.".format(self.id, self.env.now % 24)
-            yield self.env.process(self.travel(self.distance))
+            yield self.env.process(self.go_home())
 
-            self.location = Employee.location.home
-            print "{0}: Arrived at home at {1}".format(self.id, self.env.now % 24)
             yield self.env.timeout(24 - self.env.now % 24)
             print "{0}: Slept until {1}.".format(self.id, self.env.now % 24)
 
-    def travel(self, distance):
+    def go_home(self):
+        print "{0}: Leaving work at {1}.".format(self.id, self.env.now % 24)
+        yield self.env.process(self._travel(self.distance))
+
+        self.location = Employee.location.home
+        print "{0}: Arrived at home at {1}".format(self.id, self.env.now % 24)
+
+    def _travel(self, distance):
         self.location = Employee.location.traveling
         yield self.env.timeout(distance / self.speed)
 
@@ -111,7 +116,5 @@ class Employee(object):
         if msg[0] < self.env.now:
             print "Late message received."
 
-        if msg[1] == "HOME":
-            self.go_home = True
-
-        print "Message: {0}".format(msg[1])
+        if "HOME" in msg[1]:
+            self.send_home = True
