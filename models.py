@@ -42,7 +42,6 @@ class Weather(object):
     def run(self):
         while self.distance > 0:
             self.distance -= 1
-            print self.distance
             yield self.env.timeout(float(self.time) / self.start_distance)
 
 
@@ -86,9 +85,9 @@ class UnitHead(Logger):
             if minimum < 0:
                 minimum = 0
             quotient = (self.weather.distance / self.weather.speed) * uniform(minimum, self.workload)
-            self.log(quotient)
-            if quotient < (self.weather.distance / self.weather.speed) / 20:
-                self.log(self.weather.distance)
+            print self.weather.distance
+            if quotient < (self.weather.start_distance / self.weather.speed) / 20:
+                print "being alerting employees"
 
 
 class Employee(Logger):
@@ -199,9 +198,10 @@ class Employee(Logger):
         if "HOME" in msg['command']:
             # make sure the message is for you specifically
             if msg['kind'] == "ALL" or Employee.kind[msg['kind']] == self.kind:
-                self.send_home = True
-                # if you get to work and then find out you have to go
-                # home, you're going to be unhappy
-                if msg['time'] < arrival_time + 2:
-                    self.log(">>>> Late message received.")
-                    self.logged_info['gruntled'] = "dis"
+                if msg['distance'] > self.distance:
+                    self.send_home = True
+                    # if you get to work and then find out you have to go
+                    # home, you're going to be unhappy
+                    if msg['time'] < arrival_time + 2:
+                        self.log(">>>> Late message received.")
+                        self.logged_info['gruntled'] = "dis"
