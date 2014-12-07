@@ -1,6 +1,8 @@
 import simpy
 from enum import Enum
 
+from messages import BroadcastPipe
+
 CYRIDE = True
 
 
@@ -40,8 +42,41 @@ class Weather(object):
             yield self.env.timeout(self.speed)
 
 
-class UnitHead(object):
-    pass
+class UnitHead(Logger):
+    """The unit head object. Is responsible for a department or
+    staff unit.
+
+    Args:
+        env: The simpy environment.
+        weather: The weather instance.
+        employees: A list of employee objects.
+        name: The name of the unit."""
+    def __init__(self, env, weather, initial_workload, pipe):
+        self.env = env
+        self.weather = weather
+        self.pipe = pipe
+
+        self.check_interval = 1 / self.weather.intensity.value
+        # check by the inverse of how bad the weather is
+        # that is -- if the weather is just bad, check every hour
+        # if it's really bad, check every half hour
+        # and if it's apocalyptic out there, check every 10 minutes
+
+        self.workload = initial_workload
+        # a scaling factor affected by how bad and fast the weather is
+        # moving and how much and the quality of the information they're
+        # receiving. Affects lots of things, like they're ability to
+        # estimate when they should alert employees
+
+        self.action = env.process(self.run())
+        super(UnitHead, self).__init__()
+
+    def run(self):
+        # sleep and travel
+        yield self.env.timeout(8)
+        while True:
+            # Check the weather
+            yield self.env.timeout(self.check_interval)
 
 
 class Employee(Logger):
@@ -149,10 +184,9 @@ class Employee(Logger):
 
     def check_for_messages(self, in_pipe, arrival_time):
         msg = yield in_pipe.get()
-
         if "HOME" in msg['command']:
             # make sure the message is for you specifically
-            if  msg['kind'] == "ALL" or Employee.kind[msg['kind']] == self.kind:
+            if msg['kind'] == "ALL" or Employee.kind[msg['kind']] == self.kind:
                 self.send_home = True
                 # if you get to work and then find out you have to go
                 # home, you're going to be unhappy
