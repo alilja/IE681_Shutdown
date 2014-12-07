@@ -1,6 +1,6 @@
 import simpy
 
-from models import Weather, Employee
+from models import Weather, Employee, UnitHead
 from messages import BroadcastPipe
 
 
@@ -30,9 +30,9 @@ def message_generator(name, env, out_pipe):
 env = simpy.Environment()
 weather = Weather(
     env=env,
-    time=10,
-    distance=20,
-    intensity=6,
+    time=14,
+    distance=30,
+    intensity=1,
 )
 
 bc_pipe = BroadcastPipe(env)
@@ -70,6 +70,7 @@ employees = [
     ),
 ]
 
+head = UnitHead(env, weather, 0.2, bc_pipe)
 env.process(message_generator('Generator A', env, bc_pipe))
 
 env.run(until=24)

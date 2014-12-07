@@ -1,3 +1,5 @@
+from random import uniform
+
 import simpy
 from enum import Enum
 
@@ -30,16 +32,18 @@ class Weather(object):
     def __init__(self, env, time, distance, intensity):
         self.env = env
         self.distance = distance
+        self.start_distance = distance
         self.intensity = intensity
-
-        self.speed = float(distance) / float(time)
+        self.time = time
+        self.speed = float(self.distance) / float(self.time)
 
         self.action = env.process(self.run())
 
     def run(self):
         while self.distance > 0:
             self.distance -= 1
-            yield self.env.timeout(self.speed)
+            print self.distance
+            yield self.env.timeout(float(self.time) / self.start_distance)
 
 
 class UnitHead(Logger):
@@ -56,7 +60,7 @@ class UnitHead(Logger):
         self.weather = weather
         self.pipe = pipe
 
-        self.check_interval = 1 / self.weather.intensity.value
+        self.check_interval = 1 / float(self.weather.intensity)
         # check by the inverse of how bad the weather is
         # that is -- if the weather is just bad, check every hour
         # if it's really bad, check every half hour
@@ -77,6 +81,13 @@ class UnitHead(Logger):
         while True:
             # Check the weather
             yield self.env.timeout(self.check_interval)
+
+            minimum = 1 * (self.workload - 0.5)
+            if minimum < 0:
+                minimum = 0
+            quotient = (self.weather.distance / self.weather.speed) * uniform(minimum, self.workload)
+            if quotient < (self.weather.distance / self.weather.speed) / 20:
+                self.log(self.weather.distance)
 
 
 class Employee(Logger):
