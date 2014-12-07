@@ -55,12 +55,16 @@ class Employee(object):
 
         self.location = Employee.location.home
 
+        self.go_home = False
+
         # runs every time a new employee is created
         self.action = env.process(self.run())
 
     def run(self):
         while True:
-            print "{0}: Waking up at {1}.".format(self.id, self.env.now + 8 % 24)
+            yield self.env.timeout(8)
+
+            print "{0}: Waking up at {1}.".format(self.id, self.env.now % 24)
             yield self.env.process(self.check_for_messages(self.pipe))
             yield self.env.timeout(1)
 
@@ -77,23 +81,24 @@ class Employee(object):
                     print "{0}: Cannot get to work because Cyride is closed.".format(self.id)
                     break
 
-            print "{0}: Going to work at {1}.".format(self.id, self.env.now + 8 % 24)
+            print "{0}: Going to work at {1}.".format(self.id, self.env.now % 24)
             yield self.env.process(self.travel(self.distance))
 
             self.location = Employee.location.work
-            print "{0}: Arrived at work at {1}.".format(self.id, self.env.now + 8 % 24)
+            print "{0}: Arrived at work at {1}.".format(self.id, self.env.now % 24)
             for i in range(8):
                 yield self.env.process(self.work(1))
                 print "{0}: Checking messages.".format(self.id)
                 yield self.env.process(self.check_for_messages(self.pipe))
 
-            print "{0}: Leaving work at {1}.".format(self.id, self.env.now + 8 % 24)
+
+            print "{0}: Leaving work at {1}.".format(self.id, self.env.now % 24)
             yield self.env.process(self.travel(self.distance))
 
             self.location = Employee.location.home
-            print "{0}: Arrived at home at {1}".format(self.id, self.env.now + 8 % 24)
+            print "{0}: Arrived at home at {1}".format(self.id, self.env.now % 24)
             yield self.env.timeout(24 - self.env.now)
-            print "{0}: Slept until {1}.".format(self.id, self.env.now + 8 % 24)
+            print "{0}: Slept until {1}.".format(self.id, self.env.now % 24)
 
     def travel(self, distance):
         self.location = Employee.location.traveling
@@ -107,4 +112,6 @@ class Employee(object):
         if msg[0] < self.env.now:
             print "Late message received."
 
+        if msg[1] == "HOME":
+            self.go_home = True
         print "Message: {0}".format(msg[1])
