@@ -151,7 +151,7 @@ class Employee(Logger):
             for i in range(8):
                 self.log("Checking messages.")
                 # checking the messages, which flips the send_home flag
-                yield self.env.process(self.check_for_messages(self.pipe, arrived))
+                self.env.process(self.check_for_messages(self.pipe, arrived))
                 if self.send_home:
                     self.log("Received go home message.")
                     # if you get the message to go home, do it
@@ -165,7 +165,7 @@ class Employee(Logger):
             yield self.env.process(self.go_home())
 
             # stay at home for the remainder of the day (until midnight, technically)
-            yield self.env.timeout(24 - self.env.now % 24)
+            yield self.env.timeout(24 - (self.env.now % 24))
             self.log("Slept until {0}.".format(self.env.now % 24))
 
     def go_home(self):
