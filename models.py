@@ -1,4 +1,4 @@
-from random import uniform, randrange
+from random import uniform
 
 from enum import Enum
 
@@ -8,7 +8,12 @@ CYRIDE = True
 
 class Logger(object):
     _TOTAL_ITEMS = 0
-    LOGGED_INFO = {'gruntled': []}
+    LOGGED_INFO = {
+        'gruntled': [],
+        'sent_messages': {
+            'unit_heads': {}
+        },
+    }
     EMPLOYEES = []
     HEADS = []
 
@@ -20,7 +25,10 @@ class Logger(object):
 
     def log(self, message):
         if Logger.LOG:
-            print "{0}: {1}".format(self.id, message)
+            type_name = ""
+            if type(self) is UnitHead:
+                type_name = "UH "
+            print "{1}{0}: {2}".format(self.id, type_name, message)
 
 
 class Weather(object):
@@ -55,15 +63,16 @@ class Weather(object):
                 yield self.env.timeout(float(self.time) / self.start_distance)
         if self.state == "here":
             while True:
-                die = randrange(11)
-                print die
+                die = uniform(0, 11)
                 if die >= self.intensity:
                     self.state = "clearing"
                     print "Clearing"
                     break
-
                 yield self.env.timeout(1)
-
+        if self.state == "clearing":
+            while True:
+                self.distance += 1
+                yield self.env.timeout(float(self.time) / self.start_distance)
 
 
 class UnitHead(Logger):
@@ -94,6 +103,7 @@ class UnitHead(Logger):
         Logger.HEADS.append(self)
         self.action = env.process(self.run())
         super(UnitHead, self).__init__()
+        Logger.LOGGED_INFO['sent_messages']['unit_heads'][self.id] = []
 
     def run(self):
         # sleep and travel
@@ -107,15 +117,17 @@ class UnitHead(Logger):
                 minimum = 0
             quotient = (self.weather.distance / self.weather.speed) * uniform(minimum, self.workload)
             if quotient < (self.weather.start_distance / self.weather.speed) / 20:
-                self.pipe.put({
+                msg = {
                     "time": self.env.now,
                     "command": "HOME",
                     "kind": "ALL",
                     "quality": "good",
                     "distance": self.weather.distance,
                     "id": self.id
-                })
-                # self.log("Sent go home message ({0})".format(self.weather.distance))
+                }
+                Logger.LOGGED_INFO['sent_messages']['unit_heads'][self.id].append((msg, self.env.now))
+                self.pipe.put(msg)
+                self.log("Sent go home message ({0})".format(self.env.now % 24))
 
 
 class Employee(Logger):
@@ -259,4 +271,14 @@ class Review(Logger):
             location = employee.location.name
             output[location] = output.setdefault(location, {})
             output[location][employee.status] = output[location].setdefault(employee.status, 0) + 1
+        return output
+
+    @staticmethod
+    def get_unit_head_messages():
+        output = {'messages': {}, 'first_message': (0, 0)}
+        for head_id, messages in Logger.LOGGED_INFO['sent_messages']['unit_heads'].items():
+            output['messages'][head_id] = len(messages)
+            for message in messages:
+                if message[1] < output['first_message']:
+                    output['first_message'] = message
         return output

@@ -1,6 +1,6 @@
 import simpy
 
-from models import Weather, Employee, UnitHead, Review
+from models import Weather, Employee, UnitHead, Review, Logger
 from messages import BroadcastPipe
 
 env = simpy.Environment()
@@ -8,7 +8,7 @@ weather = Weather(
     env=env,
     time=14,
     distance=60,
-    intensity=8,
+    intensity=8.1,
 )
 
 bc_pipe = BroadcastPipe(env)
@@ -48,6 +48,7 @@ employees = [
 
 head = UnitHead(env, weather, 1.0, bc_pipe)
 
+
 Employee(
     env=env,
     weather=weather,
@@ -65,3 +66,4 @@ for head_id, num in disgruntled_employees.items():
     print "Unit Head #{0} had {1} late notices.".format(head_id, num)
 
 print Review.get_statuses()
+print Review.get_unit_head_messages()
