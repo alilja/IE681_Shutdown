@@ -1,4 +1,4 @@
-from random import uniform
+from random import uniform, randrange
 
 from enum import Enum
 
@@ -39,17 +39,31 @@ class Weather(object):
         self.intensity = intensity
         self.time = time
         self.speed = float(self.distance) / float(self.time)
+        self.state = "arriving"
 
         self.action = env.process(self.run())
 
     def run(self):
-        while self.distance > 0:
-            self.distance -= 1
-            if self.distance == 0:
-                print "+-----------------+"
-                print "| WEATHER ARRIVED |"
-                print "+-----------------+"
-            yield self.env.timeout(float(self.time) / self.start_distance)
+        if self.state == "arriving":
+            while self.distance > 0:
+                self.distance -= 1
+                if self.distance == 0:
+                    print "+-----------------+"
+                    print "| WEATHER ARRIVED |"
+                    print "+-----------------+"
+                    self.state = "here"
+                yield self.env.timeout(float(self.time) / self.start_distance)
+        if self.state == "here":
+            while True:
+                die = randrange(11)
+                print die
+                if die >= self.intensity:
+                    self.state = "clearing"
+                    print "Clearing"
+                    break
+
+                yield self.env.timeout(1)
+
 
 
 class UnitHead(Logger):
@@ -66,7 +80,7 @@ class UnitHead(Logger):
         self.weather = weather
         self.pipe = pipe
 
-        self.check_interval = 1 / float(self.weather.intensity)
+        self.check_interval = 1 / min(1.0, float(self.weather.intensity) - 2)
         # check by the inverse of how bad the weather is
         # that is -- if the weather is just bad, check every hour
         # if it's really bad, check every half hour

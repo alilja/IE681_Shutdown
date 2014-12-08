@@ -6,9 +6,9 @@ from messages import BroadcastPipe
 env = simpy.Environment()
 weather = Weather(
     env=env,
-    time=15,
+    time=14,
     distance=60,
-    intensity=1,
+    intensity=8,
 )
 
 bc_pipe = BroadcastPipe(env)
