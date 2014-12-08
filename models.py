@@ -85,9 +85,15 @@ class UnitHead(Logger):
             if minimum < 0:
                 minimum = 0
             quotient = (self.weather.distance / self.weather.speed) * uniform(minimum, self.workload)
-            print self.weather.distance
             if quotient < (self.weather.start_distance / self.weather.speed) / 20:
-                print "being alerting employees"
+                self.pipe.put({
+                    "time": self.env.now,
+                    "command": "HOME",
+                    "kind": "ALL",
+                    "quality": "good",
+                    "distance": self.weather.distance,
+                })
+                # self.log("Sent go home message ({0})".format(self.weather.distance))
 
 
 class Employee(Logger):
@@ -188,17 +194,17 @@ class Employee(Logger):
 
     def _travel(self, distance):
         self.location = Employee.location.traveling
-        yield self.env.timeout(distance / self.speed)
+        yield self.env.timeout(1 / self.speed)
 
     def work(self, duration):
         yield self.env.timeout(duration)
 
     def check_for_messages(self, in_pipe, arrival_time):
         msg = yield in_pipe.get()
-        if "HOME" in msg['command']:
+        if "HOME" in msg['command'] and self.location is not Employee.location.home:
             # make sure the message is for you specifically
             if msg['kind'] == "ALL" or Employee.kind[msg['kind']] == self.kind:
-                if msg['distance'] > self.distance:
+                if msg['distance'] < self.distance:
                     self.send_home = True
                     # if you get to work and then find out you have to go
                     # home, you're going to be unhappy
