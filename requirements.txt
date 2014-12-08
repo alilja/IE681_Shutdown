@@ -1,0 +1,4 @@
+PyYAML==3.11
+enum34==1.0.3
+simpy==3.0.5
+wsgiref==0.1.2
