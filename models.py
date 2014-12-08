@@ -155,7 +155,7 @@ class Employee(Logger):
             # then they opt to stay home. more intense weather makes
             # it more likely they'll stay home
             weather_factor = (float(self.weather.distance) / float(self.weather.speed)) / float(self.weather.intensity)
-            personal_factor = (float(self.distance) / self.speed)
+            personal_factor = (float(self.distance) / self.speed) - 1
             if weather_factor * uniform(0, self.likelihood) < personal_factor:
                 self.log("Staying home.")
                 self.simulate = False
