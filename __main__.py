@@ -6,7 +6,7 @@ from messages import BroadcastPipe
 env = simpy.Environment()
 weather = Weather(
     env=env,
-    time=100,
+    time=11,
     distance=60,
     intensity=1,
 )
@@ -46,7 +46,7 @@ employees = [
     ),
 ]
 
-head = UnitHead(env, weather, 0.0, bc_pipe)
+head = UnitHead(env, weather, 1.0, bc_pipe)
 
 Employee(
     env=env,

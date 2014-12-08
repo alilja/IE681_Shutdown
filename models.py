@@ -10,14 +10,17 @@ class Logger(object):
     _TOTAL_ITEMS = 0
     LOGGED_INFO = {'gruntled': []}
     EMPLOYEES = []
+    HEADS = []
 
+    LOG = True
 
     def __init__(self):
         self.id = Logger._TOTAL_ITEMS
         Logger._TOTAL_ITEMS += 1
 
     def log(self, message):
-        print "{0}: {1}".format(self.id, message)
+        if Logger.LOG:
+            print "{0}: {1}".format(self.id, message)
 
 
 class Weather(object):
@@ -42,7 +45,10 @@ class Weather(object):
     def run(self):
         while self.distance > 0:
             self.distance -= 1
-            print self.distance
+            if self.distance == 0:
+                print "+-----------------+"
+                print "| WEATHER ARRIVED |"
+                print "+-----------------+"
             yield self.env.timeout(float(self.time) / self.start_distance)
 
 
@@ -71,7 +77,7 @@ class UnitHead(Logger):
         # moving and how much and the quality of the information they're
         # receiving. Affects lots of things, like they're ability to
         # estimate when they should alert employees
-
+        Logger.HEADS.append(self)
         self.action = env.process(self.run())
         super(UnitHead, self).__init__()
 
@@ -121,6 +127,7 @@ class Employee(Logger):
         self.weather = weather
         self.kind = kind
         self.pipe = pipe
+        self.likelihood = 1.0
 
         self.location = Employee.location.home
         self.status = None
@@ -147,7 +154,9 @@ class Employee(Logger):
             # if the weather will get to work faster than they will
             # then they opt to stay home. more intense weather makes
             # it more likely they'll stay home
-            if (self.weather.distance / self.weather.speed) / self.weather.intensity < self.distance / self.speed:
+            weather_factor = (float(self.weather.distance) / float(self.weather.speed)) / float(self.weather.intensity)
+            personal_factor = (float(self.distance) / self.speed)
+            if weather_factor * uniform(0, self.likelihood) < personal_factor:
                 self.log("Staying home.")
                 self.simulate = False
                 self.status = "SELF"
@@ -200,7 +209,7 @@ class Employee(Logger):
 
     def _travel(self, distance):
         self.location = Employee.location.traveling
-        yield self.env.timeout(1 / self.speed)
+        yield self.env.timeout(self.distance / float(self.speed))
 
     def work(self, duration):
         yield self.env.timeout(duration)
@@ -233,7 +242,7 @@ class Review(Logger):
     def get_statuses():
         output = {}
         for employee in Logger.EMPLOYEES:
-            location = employee.location
+            location = employee.location.name
             output[location] = output.setdefault(location, {})
             output[location][employee.status] = output[location].setdefault(employee.status, 0) + 1
         return output
