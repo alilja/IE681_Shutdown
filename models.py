@@ -6,6 +6,28 @@ from enum import Enum
 CYRIDE = True
 
 
+# if the weather occurs before employees go to work
+# then madden unilaterally tells them not to come in
+# madden's workload goes up slowly over time based on
+# the intensity of the weather and some random numbers
+# to simulate people giving him information
+# every 15 minutes his workload goes down a little bit
+# every 10 to 30 minutes it goes
+
+# if it's the middle of the night, lower workload
+# make setting for how long before a storm reaches ames that
+# madden makes his decision
+#
+# employees can still come in
+# if it's a short period of time before the storm arrives, make
+# it increase unit head workloads a certain amount
+
+# cognitive load goes up and down over the day
+# when the weather hits, everyone gets a +20% bump in load
+# they work really hard, not allowed to leave until load
+# reaches 0
+# factor likelihood into it too -- maybe as a scaling factor
+
 class Logger(object):
     _TOTAL_ITEMS = 0
     LOGGED_INFO = {
@@ -146,14 +168,23 @@ class Employee(Logger):
 
     _counter = 0
 
-    def __init__(self, env, weather, distance, pipe, speed=45, kind=0):
+    def __init__(
+        self,
+        env,
+        weather,
+        distance,
+        pipe,
+        likelihood=1.0,
+        speed=45,
+        kind=0
+    ):
         self.env = env
         self.speed = speed
         self.distance = distance
         self.weather = weather
         self.kind = kind
         self.pipe = pipe
-        self.likelihood = 1.0
+        self.likelihood = likelihood
 
         self.location = Employee.location.home
         self.status = None
@@ -177,10 +208,12 @@ class Employee(Logger):
 
             # check the weather before we head out...
             self.log("Checking weather.")
+            # check messages for something from madden
+
             # if the weather will get to work faster than they will
             # then they opt to stay home. more intense weather makes
             # it more likely they'll stay home
-            weather_factor = (float(self.weather.distance) / float(self.weather.speed)) / float(self.weather.intensity)
+            weather_factor = float(self.weather.distance / self.weather.speed) / float(self.weather.intensity)
             personal_factor = (float(self.distance) / self.speed) - 1
             if weather_factor * uniform(0, self.likelihood) < personal_factor:
                 self.log("Staying home.")
@@ -214,6 +247,7 @@ class Employee(Logger):
                     # if you get the message to go home, do it
                     yield self.env.process(self.go_home())
                     # removed from the simulation
+
                     self.simulate = False
                     self.status = "MESSAGE"
                     return

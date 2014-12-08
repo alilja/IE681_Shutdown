@@ -8,7 +8,7 @@ weather = Weather(
     env=env,
     time=14,
     distance=60,
-    intensity=8.1,
+    intensity=6,
 )
 
 bc_pipe = BroadcastPipe(env)
