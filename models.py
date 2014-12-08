@@ -1,18 +1,18 @@
 from random import uniform
 
-import simpy
 from enum import Enum
 
-from messages import BroadcastPipe
 
 CYRIDE = True
 
 
 class Logger(object):
     _TOTAL_ITEMS = 0
+    LOGGED_INFO = {'gruntled': []}
+    EMPLOYEES = []
+
 
     def __init__(self):
-        self.logged_info = {}
         self.id = Logger._TOTAL_ITEMS
         Logger._TOTAL_ITEMS += 1
 
@@ -42,6 +42,7 @@ class Weather(object):
     def run(self):
         while self.distance > 0:
             self.distance -= 1
+            print self.distance
             yield self.env.timeout(float(self.time) / self.start_distance)
 
 
@@ -92,6 +93,7 @@ class UnitHead(Logger):
                     "kind": "ALL",
                     "quality": "good",
                     "distance": self.weather.distance,
+                    "id": self.id
                 })
                 # self.log("Sent go home message ({0})".format(self.weather.distance))
 
@@ -121,12 +123,13 @@ class Employee(Logger):
         self.pipe = pipe
 
         self.location = Employee.location.home
-
+        self.status = None
         self.send_home = False
 
         self.simulate = True
 
         # runs every time a new employee is created
+        Logger.EMPLOYEES.append(self)
         self.action = env.process(self.run())
         super(Employee, self).__init__()
 
@@ -147,6 +150,7 @@ class Employee(Logger):
             if (self.weather.distance / self.weather.speed) / self.weather.intensity < self.distance / self.speed:
                 self.log("Staying home.")
                 self.simulate = False
+                self.status = "SELF"
                 break
 
             # if they're a student worker, cyride is shut down, and they can't walk to work
@@ -155,6 +159,7 @@ class Employee(Logger):
                 if not CYRIDE and self.distance > 1.0:
                     self.log("Cannot get to work because Cyride is closed.")
                     self.simulate = False
+                    self.status = "CYRIDE"
                     break
 
             # if none of that is true, they travel to work
@@ -175,6 +180,7 @@ class Employee(Logger):
                     yield self.env.process(self.go_home())
                     # removed from the simulation
                     self.simulate = False
+                    self.status = "MESSAGE"
                     return
                 yield self.env.process(self.work(1))
 
@@ -209,5 +215,25 @@ class Employee(Logger):
                     # if you get to work and then find out you have to go
                     # home, you're going to be unhappy
                     if msg['time'] < arrival_time + 2:
+                        Logger.LOGGED_INFO['gruntled'].append(msg['id'])
                         self.log(">>>> Late message received.")
-                        self.logged_info['gruntled'] = "dis"
+
+
+class Review(Logger):
+    @staticmethod
+    def get_disgruntled_employees():
+        output = {}
+        if Logger.LOGGED_INFO.get('gruntled') is None:
+            return None
+        for disgruntled_id in Logger.LOGGED_INFO['gruntled']:
+            output[disgruntled_id] = output.setdefault(disgruntled_id, 0) + 1
+        return output
+
+    @staticmethod
+    def get_statuses():
+        output = {}
+        for employee in Logger.EMPLOYEES:
+            location = employee.location
+            output[location] = output.setdefault(location, {})
+            output[location][employee.status] = output[location].setdefault(employee.status, 0) + 1
+        return output
