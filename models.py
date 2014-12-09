@@ -186,6 +186,8 @@ class Employee(Logger):
         self.pipe = pipe
         self.likelihood = likelihood
 
+        self.cog_load = 0.0
+
         self.location = Employee.location.home
         self.status = None
         self.send_home = False
@@ -208,14 +210,14 @@ class Employee(Logger):
 
             # check the weather before we head out...
             self.log("Checking weather.")
-            # check messages for something from madden
+            ############### check messages for something from madden
 
             # if the weather will get to work faster than they will
             # then they opt to stay home. more intense weather makes
             # it more likely they'll stay home
             weather_factor = float(self.weather.distance / self.weather.speed) / float(self.weather.intensity)
-            personal_factor = (float(self.distance) / self.speed) - 1
-            if weather_factor * uniform(0, self.likelihood) < personal_factor:
+            personal_factor = (float(self.distance) / self.speed)
+            if weather_factor * uniform(0, self.likelihood) < personal_factor and self.weather.state != "clearing":
                 self.log("Staying home.")
                 self.simulate = False
                 self.status = "SELF"
@@ -239,18 +241,26 @@ class Employee(Logger):
             self.log("Arrived at work at {0}.".format(self.env.now % 24))
             arrived = self.env.now
             for i in range(8):
-                self.log("Checking messages.")
-                # checking the messages, which flips the send_home flag
-                self.env.process(self.check_for_messages(self.pipe, arrived))
-                if self.send_home:
-                    self.log("Received go home message.")
-                    # if you get the message to go home, do it
-                    yield self.env.process(self.go_home())
-                    # removed from the simulation
+                # a worker's cognitive load goes up and down throughout the day
+                self.cog_load += uniform(-0.3, 0.3)
+                if self.cog_load < 0:
+                    self.cog_load = 0
 
-                    self.simulate = False
-                    self.status = "MESSAGE"
-                    return
+                # if they got a go home message, they have to work to reduce their load
+                if self.send_home:
+                    if self.cog_load <= 0:
+                        yield self.env.process(self.go_home())
+                        # removed from the simulation
+
+                        self.simulate = False
+                        self.status = "MESSAGE"
+                        return
+                    else:
+                        self.cog_load -= uniform(self.likelihood / 2, min(1.0, self.likelihood + 0.5))
+                else:
+                    self.log("Checking messages.")
+                    # checking the messages, which flips the send_home flag
+                    self.env.process(self.check_for_messages(self.pipe, arrived))
                 yield self.env.process(self.work(1))
 
             # at the end of the day, go home
@@ -280,7 +290,10 @@ class Employee(Logger):
             # make sure the message is for you specifically
             if msg['kind'] == "ALL" or Employee.kind[msg['kind']] == self.kind:
                 if msg['distance'] < self.distance:
+                    # when the weather hits, everyone gets a bump in their load
+                    self.cog_load += 0.2
                     self.send_home = True
+                    self.log("Received go home message.")
                     # if you get to work and then find out you have to go
                     # home, you're going to be unhappy
                     if msg['time'] < arrival_time + 2:
