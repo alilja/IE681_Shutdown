@@ -121,20 +121,22 @@ class Madden(Logger):
                 self.cog_load -= 0.1
                 yield self.env.timeout(uniform((1 / 6), 0.5))
 
-                print time_to_arrival
-                if self.time_to_call >= time_to_arrival:
-                    shutdown = True
-                    msg = {
-                        "time": self.env.now,
-                        "command": "HOME",
-                        "kind": "ALL",
-                        "quality": "good",
-                        "distance": -1,
-                        "id": self.id
-                    }
-                    Logger.LOGGED_INFO['sent_messages']['madden'].append((msg, self.env.now))
-                    _ = [pipe.put(msg) for pipe in self.pipes]
-                    self.log("SHUTDOWN ({0})".format(self.env.now % 24))
+                if self.time_to_call >= time_to_arrival and self.env.now < 8:
+                    clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (8 - self.weather.time))
+                    print clear_percentage
+                    if clear_percentage < 0.6:
+                        shutdown = True
+                        msg = {
+                            "time": self.env.now,
+                            "command": "HOME",
+                            "kind": "ALL",
+                            "quality": "good",
+                            "distance": -1,
+                            "id": self.id
+                        }
+                        Logger.LOGGED_INFO['sent_messages']['madden'].append((msg, self.env.now))
+                        _ = [pipe.put(msg) for pipe in self.pipes]
+                        self.log("SHUTDOWN ({0})".format(self.env.now % 24))
             else:
                 yield self.env.timeout(0.1)
 
@@ -153,7 +155,7 @@ class UnitHead(Logger):
         self.weather = weather
         self.pipe = pipe
 
-        self.check_interval = 1 / min(1.0, float(self.weather.intensity) - 2)
+        self.check_interval = max(0, 1 / min(1.0, float(self.weather.intensity) - 2))
         # check by the inverse of how bad the weather is
         # that is -- if the weather is just bad, check every hour
         # if it's really bad, check every half hour
@@ -205,8 +207,7 @@ class Employee(Logger):
         """What kind of employee they are."""
         staff = 0
         faculty = 1
-        student = 2
-        student_worker = 3
+        student_worker = 2
 
     _counter = 0
 
