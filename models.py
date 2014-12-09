@@ -98,6 +98,7 @@ class Madden(Logger):
         self.env = env
         self.weather = weather
         self.time_to_call = time_to_call
+        assert time_to_call < self.weather.time, "Madden must make call before weather arrives."
         self.pipes = pipes
 
         self.cog_load = 0.0
@@ -120,11 +121,10 @@ class Madden(Logger):
                 # he parses that information so his workload goes down
                 self.cog_load -= 0.1
                 yield self.env.timeout(uniform((1 / 6), 0.5))
-
-                if self.time_to_call >= time_to_arrival and self.env.now < 8:
-                    clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (8 - self.weather.time))
+                if self.time_to_call <= time_to_arrival and self.env.now < 8:
+                    clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (9 - self.weather.time))
                     print clear_percentage
-                    if clear_percentage < 0.6:
+                    if clear_percentage < 0.8:
                         shutdown = True
                         msg = {
                             "time": self.env.now,
@@ -253,18 +253,26 @@ class Employee(Logger):
 
             # check the weather before we head out...
             self.log("Checking weather.")
-            ############### check messages for something from madden
-
-            # if the weather will get to work faster than they will
-            # then they opt to stay home. more intense weather makes
-            # it more likely they'll stay home
-            weather_factor = float(self.weather.distance / self.weather.speed) / float(self.weather.intensity)
-            personal_factor = (float(self.distance) / self.speed)
-            if weather_factor * uniform(0, self.likelihood) < personal_factor and self.weather.state != "clearing":
-                self.log("Staying home.")
-                self.simulate = False
-                self.status = "SELF"
-                break
+            msg = yield self.pipe.get()
+            if msg is not None:
+                if msg['id'] == 0:
+                    if msg['command'] == "HOME":
+                        if uniform(0, self.likelihood) <= 0.5:
+                            self.log("Following Madden's advice.")
+                            self.simulate = False
+                            self.status = "MADDEN"
+                            break
+            else:
+                # if the weather will get to work faster than they will
+                # then they opt to stay home. more intense weather makes
+                # it more likely they'll stay home
+                weather_factor = float(self.weather.distance / self.weather.speed) / float(self.weather.intensity)
+                personal_factor = (float(self.distance) / self.speed)
+                if weather_factor * uniform(0, self.likelihood) < personal_factor and self.weather.state != "clearing":
+                    self.log("Staying home.")
+                    self.simulate = False
+                    self.status = "SELF"
+                    break
 
             # if they're a student worker, cyride is shut down, and they can't walk to work
             # then they can't come in at all
@@ -336,7 +344,7 @@ class Employee(Logger):
                     # when the weather hits, everyone gets a bump in their load
                     self.cog_load += 0.2
                     self.send_home = True
-                    self.log("Received go home message.")
+                    self.log("Received go home message from {0}.".format(msg['id']))
                     # if you get to work and then find out you have to go
                     # home, you're going to be unhappy
                     if msg['time'] < arrival_time + 2:
