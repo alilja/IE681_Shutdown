@@ -1,12 +1,12 @@
 import simpy
 
-from models import Weather, Employee, UnitHead, Review
+from models import Weather, Employee, UnitHead, Madden, Review
 from messages import BroadcastPipe
 
 env = simpy.Environment()
 weather = Weather(
     env=env,
-    time=7,
+    time=8,
     distance=60,
     intensity=6,
 )
@@ -48,6 +48,7 @@ employees = [
 
 head = UnitHead(env, weather, 0.0, bc_pipe)
 
+madden = Madden(env, weather, 2, [bc_pipe])
 
 env.run(until=24)
 

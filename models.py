@@ -22,22 +22,18 @@ CYRIDE = True
 # if it's a short period of time before the storm arrives, make
 # it increase unit head workloads a certain amount
 
-# cognitive load goes up and down over the day
-# when the weather hits, everyone gets a +20% bump in load
-# they work really hard, not allowed to leave until load
-# reaches 0
-# factor likelihood into it too -- maybe as a scaling factor
-
 class Logger(object):
     _TOTAL_ITEMS = 0
     LOGGED_INFO = {
         'gruntled': [],
         'sent_messages': {
-            'unit_heads': {}
+            'unit_heads': {},
+            'madden': [],
         },
     }
     EMPLOYEES = []
     HEADS = []
+    MADDEN = None
 
     LOG = True
 
@@ -95,6 +91,52 @@ class Weather(object):
             while True:
                 self.distance += 1
                 yield self.env.timeout(float(self.time) / self.start_distance)
+
+
+class Madden(Logger):
+    def __init__(self, env, weather, time_to_call, pipes):
+        self.env = env
+        self.weather = weather
+        self.time_to_call = time_to_call
+        self.pipes = pipes
+
+        self.cog_load = 0.0
+
+        Logger.MADDEN = self
+        self.action = env.process(self.run())
+        super(Madden, self).__init__()
+        self.id = 0
+
+    def run(self):
+        shutdown = False
+        while True:
+            if not shutdown:
+                time_to_arrival = self.weather.distance / self.weather.speed
+
+                # people are telling him things so his workload is going up
+                self.cog_load += uniform(-0.1, self.weather.intensity * 0.1)
+                yield self.env.timeout(0.25)
+
+                # he parses that information so his workload goes down
+                self.cog_load -= 0.1
+                yield self.env.timeout(uniform((1 / 6), 0.5))
+
+                print time_to_arrival
+                if self.time_to_call >= time_to_arrival:
+                    shutdown = True
+                    msg = {
+                        "time": self.env.now,
+                        "command": "HOME",
+                        "kind": "ALL",
+                        "quality": "good",
+                        "distance": -1,
+                        "id": self.id
+                    }
+                    Logger.LOGGED_INFO['sent_messages']['madden'].append((msg, self.env.now))
+                    _ = [pipe.put(msg) for pipe in self.pipes]
+                    self.log("SHUTDOWN ({0})".format(self.env.now % 24))
+            else:
+                yield self.env.timeout(0.1)
 
 
 class UnitHead(Logger):
