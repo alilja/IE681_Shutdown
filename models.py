@@ -107,7 +107,6 @@ class Madden(Logger):
                 yield self.env.timeout(uniform((1 / 6), 0.5))
                 if self.time_to_call <= time_to_arrival and self.env.now < 8:
                     clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (9 - self.weather.time))
-                    print clear_percentage
                     if clear_percentage < 0.8 and clear_percentage > 0:
                         shutdown = True
                         msg = {
