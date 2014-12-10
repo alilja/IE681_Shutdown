@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import simpy
 
 from models import Weather, Madden, Review, Logger
