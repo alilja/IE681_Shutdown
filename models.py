@@ -6,22 +6,6 @@ from enum import Enum
 CYRIDE = True
 
 
-# if the weather occurs before employees go to work
-# then madden unilaterally tells them not to come in
-# madden's workload goes up slowly over time based on
-# the intensity of the weather and some random numbers
-# to simulate people giving him information
-# every 15 minutes his workload goes down a little bit
-# every 10 to 30 minutes it goes
-
-# if it's the middle of the night, lower workload
-# make setting for how long before a storm reaches ames that
-# madden makes his decision
-#
-# employees can still come in
-# if it's a short period of time before the storm arrives, make
-# it increase unit head workloads a certain amount
-
 class Logger(object):
     _TOTAL_ITEMS = 0
     LOGGED_INFO = {
@@ -124,7 +108,7 @@ class Madden(Logger):
                 if self.time_to_call <= time_to_arrival and self.env.now < 8:
                     clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (9 - self.weather.time))
                     print clear_percentage
-                    if clear_percentage < 0.8:
+                    if clear_percentage < 0.8 and clear_percentage > 0:
                         shutdown = True
                         msg = {
                             "time": self.env.now,
@@ -181,6 +165,7 @@ class UnitHead(Logger):
             minimum = 1 * (self.workload - 0.5)
             if minimum < 0:
                 minimum = 0
+            #self.workload += uniform(-0.1, (self.weather.distance / self.weather.speed))
             quotient = (self.weather.distance / self.weather.speed) * uniform(minimum, self.workload)
             if quotient < (self.weather.start_distance / self.weather.speed) / 20:
                 msg = {
