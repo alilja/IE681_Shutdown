@@ -32,6 +32,22 @@ class Logger(object):
                 type_name = "UH "
             print "{1}{0}: {2}".format(self.id, type_name, message)
 
+    @staticmethod
+    def _reset():
+        Logger._TOTAL_ITEMS = 0
+        Logger.LOGGED_INFO = {
+            'gruntled': [],
+            'sent_messages': {
+                'unit_heads': {},
+                'madden': [],
+            },
+        }
+        Logger.EMPLOYEES = []
+        Logger.HEADS = []
+        Logger.MADDEN = None
+
+        Logger.LOG = True
+
 
 class Weather(object):
     """The weather object.
@@ -302,6 +318,7 @@ class Employee(Logger):
             yield self.env.process(self.go_home())
 
             # stay at home for the remainder of the day (until midnight, technically)
+            self.status = "SLEEP"
             yield self.env.timeout(24 - (self.env.now % 24))
             self.log("Slept until {0}.".format(self.env.now % 24))
 
