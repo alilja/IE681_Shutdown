@@ -69,14 +69,19 @@ class Weather(object):
 
         self.action = env.process(self.run())
 
+    @staticmethod
+    def log(msg):
+        if Logger.LOG:
+            print msg
+
     def run(self):
         if self.state == "arriving":
             while self.distance > 0:
                 self.distance -= 1
                 if self.distance == 0:
-                    print "+-----------------+"
-                    print "| WEATHER ARRIVED |"
-                    print "+-----------------+"
+                    Weather.log("+-----------------+")
+                    Weather.log("| WEATHER ARRIVED |")
+                    Weather.log("+-----------------+")
                     self.state = "here"
                 yield self.env.timeout(float(self.time) / self.start_distance)
         if self.state == "here":
@@ -84,7 +89,7 @@ class Weather(object):
                 die = uniform(0, 11)
                 if die >= self.intensity:
                     self.state = "clearing"
-                    print "Clearing"
+                    Weather.log("Clearing")
                     break
                 yield self.env.timeout(1)
         if self.state == "clearing":
