@@ -10,7 +10,7 @@ import factories
 def weather_differences(weather_factors, unit_factors, iterations, start, finish):
     assert start >= 3
     assert finish <= 25
-    all_logged_info = [{} for i in range(finish - start)]
+    all_logged_info = [{'TIME': i} for i in range(finish - start)]
     for iteration in range(iterations):
         print iteration
         for i in range(start, finish):
@@ -31,19 +31,13 @@ def weather_differences(weather_factors, unit_factors, iterations, start, finish
             for status, num in Review.get_statuses()['home'].items():
                 this[status] = this.get(status, 0) + num
 
-
-            #this['gruntled'].append(Review.get_disgruntled_employees())
-            #this['messages'].append(Review.get_unit_head_messages())
-
-
-
     return all_logged_info
 
 
 weather_factors = {
     'time': 17,
     'distance': 60,
-    'intensity': 8,
+    'intensity': 1,
 }
 
 unit_factors = []
@@ -52,5 +46,13 @@ for i in range(3):
 
 
 weather_messages = weather_differences(weather_factors, unit_factors, 10, 3, 20)
+
+print weather_messages
+
+with open('../data/weather_messages_{0}.csv'.format(weather_factors['intensity']), 'w') as file:
+    writer = csv.DictWriter(file, ['TIME', 'MESSAGE', 'SLEEP', 'MADDEN', 'SELF'])
+    writer.writeheader()
+    writer.writerows(weather_messages)
+
 for i, message in enumerate(weather_messages):
     print i + 3, message
