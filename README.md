@@ -16,7 +16,7 @@ Execution
 
 Also simple. From the directory that contains `shutdown/`:
 
-    $ ./shutdown
+    $ python shutdown
 
 Otherwise,
 
