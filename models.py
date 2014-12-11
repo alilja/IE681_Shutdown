@@ -3,7 +3,7 @@ from random import uniform
 from enum import Enum
 
 
-CYRIDE = True
+CYRIDE = False
 
 
 class Logger(object):
@@ -127,8 +127,8 @@ class Madden(Logger):
                 self.cog_load -= 0.1
                 yield self.env.timeout(uniform((1 / 6), 0.5))
                 if self.time_to_call <= time_to_arrival and self.env.now < 8:
-                    clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (9 - self.weather.time))
-                    if clear_percentage < 0.8 and clear_percentage > 0:
+                    clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (12 - self.weather.time))
+                    if clear_percentage < 0.8  and clear_percentage > 0:
                         shutdown = True
                         msg = {
                             "time": self.env.now,

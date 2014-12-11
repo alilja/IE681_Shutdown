@@ -9,7 +9,7 @@ def build_factors(
     employee_min_distance=0,
     employee_max_distance=60,
     employee_mean_distance=15,
-    percent_student=42.5,
+    percent_student=40,
     head_workload=None,
 ):
     distances = []
@@ -23,8 +23,8 @@ def build_factors(
         head_workload = uniform(0.15, 0.3)
 
     return {
-        'num_employees': 10,
-        'percent_student': 42.5,
+        'num_employees': num_employees,
+        'percent_student': percent_student,
         'distance': distances,
         'head_workload': head_workload,
     }
@@ -34,7 +34,8 @@ def build_unit(env, weather, factors):
     employees = []
 
     pipe = BroadcastPipe(env)
-    student_limit = round(factors['percent_student'] * factors['num_employees'])
+    student_limit = int((float(factors['percent_student']) / 100) * factors['num_employees'])
+
     for i in range(factors['num_employees']):
         kind = Employee.kind.staff
         if i <= student_limit:

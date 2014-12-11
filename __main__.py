@@ -12,7 +12,6 @@ def weather_differences(weather_factors, unit_factors, iterations, start, finish
     assert finish <= 25
     all_logged_info = [{'TIME': i} for i in range(finish - start)]
     for iteration in range(iterations):
-        print iteration
         for i in range(start, finish):
             env = simpy.Environment()
             weather_factors['time'] = i
@@ -35,22 +34,38 @@ def weather_differences(weather_factors, unit_factors, iterations, start, finish
 
 
 weather_factors = {
-    'time': 17,
+    'time': 7.5,
     'distance': 60,
-    'intensity': 1,
+    'intensity': 6,
 }
 
 unit_factors = []
-for i in range(3):
-    unit_factors.append(factories.build_factors(head_workload=0.0))
+for i in range(2):
+    unit_factors.append(factories.build_factors(head_workload=0.0, num_employees=10))
+
+"""Logger._reset()
+env = simpy.Environment()
+weather = Weather(env=env, **weather_factors)
+units = []
+for factors in unit_factors:
+    units.append(factories.build_unit(env, weather, factors))
+_ = Madden(env, weather, 1, [unit[0] for unit in units])
+
+env.run(until=24)
+
+disgruntled_employees = Review.get_disgruntled_employees()
+for head_id, num in disgruntled_employees.items():
+    print "Unit Head #{0} had {1} late notices.".format(head_id, num)
+
+print Review.get_statuses()
+print Review.get_unit_head_messages()"""
 
 
-weather_messages = weather_differences(weather_factors, unit_factors, 10, 3, 20)
+weather_messages = weather_differences(weather_factors, unit_factors, 10, 3, 17)
 
-print weather_messages
 
-with open('../data/weather_messages_{0}.csv'.format(weather_factors['intensity']), 'w') as file:
-    writer = csv.DictWriter(file, ['TIME', 'MESSAGE', 'SLEEP', 'MADDEN', 'SELF'])
+with open('../data/weather_messages_{0}_cyride.csv'.format(weather_factors['intensity']), 'w') as file:
+    writer = csv.DictWriter(file, ['TIME', 'MESSAGE', 'SLEEP', 'MADDEN', 'SELF', 'CYRIDE'])
     writer.writeheader()
     writer.writerows(weather_messages)
 
