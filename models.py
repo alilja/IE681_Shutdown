@@ -3,7 +3,7 @@ from random import uniform
 from enum import Enum
 
 
-CYRIDE = False
+CYRIDE = True
 
 
 class Logger(object):

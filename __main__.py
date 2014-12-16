@@ -32,16 +32,38 @@ def weather_differences(weather_factors, unit_factors, iterations, start, finish
 
     return all_logged_info
 
+def unit_head_workloads(weather_factors, unit_factors, iterations):
+    all_logged_info = [{'WORKLOAD': i} for i in range(10)]
+    for i in range(iterations)
+        for workload_iteration in range(20):
+            env = simpy.Environment()
+            weather = Weather(env=env, **weather_factors)
+            Logger._reset()
+            Logger.LOG = False
+
+            units = []
+            for factors in unit_factors:
+                factors['head_workload'] = workload_iteration / 20.0
+                units.append(factories.build_unit(env, weather, factors))
+            _ = Madden(env, weather, 2, [unit[0] for unit in units])
+
+            env.run(until=24)
+
+            this = all_logged_info[i]
+            gruntled = Review.get_disgruntled_employees()
+            for head_id, num in gruntled.items():
+                this[head_id] = num
+    return all_logged_info
 
 weather_factors = {
-    'time': 7.5,
+    'time': 8.5,
     'distance': 60,
-    'intensity': 6,
+    'intensity': 8,
 }
 
 unit_factors = []
 for i in range(2):
-    unit_factors.append(factories.build_factors(head_workload=0.0, num_employees=10))
+    unit_factors.append(factories.build_factors(head_workload=1.0, num_employees=10))
 
 """Logger._reset()
 env = simpy.Environment()
@@ -60,14 +82,11 @@ for head_id, num in disgruntled_employees.items():
 print Review.get_statuses()
 print Review.get_unit_head_messages()"""
 
+workload_delays = unit_head_workloads(weather_factors, unit_factors, 10)
+print workload_delays
 
-weather_messages = weather_differences(weather_factors, unit_factors, 10, 3, 17)
-
-
-with open('../data/weather_messages_{0}_cyride.csv'.format(weather_factors['intensity']), 'w') as file:
-    writer = csv.DictWriter(file, ['TIME', 'MESSAGE', 'SLEEP', 'MADDEN', 'SELF', 'CYRIDE'])
-    writer.writeheader()
-    writer.writerows(weather_messages)
-
-for i, message in enumerate(weather_messages):
-    print i + 3, message
+# weather_messages = weather_differences(weather_factors, unit_factors, 10, 3, 17)
+# with open('../data/weather_messages_{0}_cyride.csv'.format(weather_factors['intensity']), 'w') as file:
+#    writer = csv.DictWriter(file, ['TIME', 'MESSAGE', 'SLEEP', 'MADDEN', 'SELF', 'CYRIDE'])
+#    writer.writeheader()
+#    writer.writerows(weather_messages)
