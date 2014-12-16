@@ -46,8 +46,6 @@ class Logger(object):
         Logger.HEADS = []
         Logger.MADDEN = None
 
-        Logger.LOG = True
-
 
 class Weather(object):
     """The weather object.
@@ -128,7 +126,7 @@ class Madden(Logger):
                 yield self.env.timeout(uniform((1 / 6), 0.5))
                 if self.time_to_call <= time_to_arrival and self.env.now < 8:
                     clear_percentage = 1 - ((self.weather.intensity / 11.0) ** (12 - self.weather.time))
-                    if clear_percentage < 0.8  and clear_percentage > 0:
+                    if clear_percentage < 0.8 and clear_percentage > 0:
                         shutdown = True
                         msg = {
                             "time": self.env.now,
