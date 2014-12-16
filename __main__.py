@@ -32,33 +32,34 @@ def weather_differences(weather_factors, unit_factors, iterations, start, finish
 
     return all_logged_info
 
-def unit_head_workloads(weather_factors, unit_factors, iterations):
-    all_logged_info = [{'WORKLOAD': i} for i in range(10)]
-    for i in range(iterations)
-        for workload_iteration in range(20):
+def unit_head_workloads(weather_factors, unit_factors, iterations, workload_steps=20):
+    all_logged_info = [{'WORKLOAD': i / workload_steps} for i in range(workload_steps)]
+    for i in range(iterations):
+        for workload_iteration in range(workload_steps):
             env = simpy.Environment()
             weather = Weather(env=env, **weather_factors)
             Logger._reset()
-            Logger.LOG = False
+            #Logger.LOG = False
 
             units = []
             for factors in unit_factors:
-                factors['head_workload'] = workload_iteration / 20.0
+                factors['head_workload'] = workload_iteration / float(workload_steps)
                 units.append(factories.build_unit(env, weather, factors))
             _ = Madden(env, weather, 2, [unit[0] for unit in units])
 
             env.run(until=24)
 
-            this = all_logged_info[i]
+            this = all_logged_info[workload_iteration]
             gruntled = Review.get_disgruntled_employees()
             for head_id, num in gruntled.items():
-                this[head_id] = num
+                this["LATE MESSAGES"] = this.get("LATE MESSAGES", 0) + num
+        print i
     return all_logged_info
 
 weather_factors = {
-    'time': 8.5,
+    'time': 15,
     'distance': 60,
-    'intensity': 8,
+    'intensity': 6,
 }
 
 unit_factors = []
@@ -82,7 +83,7 @@ for head_id, num in disgruntled_employees.items():
 print Review.get_statuses()
 print Review.get_unit_head_messages()"""
 
-workload_delays = unit_head_workloads(weather_factors, unit_factors, 10)
+workload_delays = unit_head_workloads(weather_factors, unit_factors, iterations=10, workload_steps=20)
 print workload_delays
 
 # weather_messages = weather_differences(weather_factors, unit_factors, 10, 3, 17)
